@@ -90,6 +90,7 @@
     <OutDir>$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)/include;$(ProjectDir)/lib;</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -252,6 +253,7 @@
     <Library Include="lib\visa32.lib" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\integer-input.h" />
     <ClInclude Include="include\visa.h" />
     <ClInclude Include="include\visaext.h" />
     <ClInclude Include="include\visatype.h" />

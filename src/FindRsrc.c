@@ -19,30 +19,56 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "visa.h"
+#include "integer-input.h"
 
+/*   CONSTANTS   */
+#define LOG_MAX 256 // Maximum amount of scanned resources to log
+
+/*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
 static ViUInt32 numInstrs;
 static ViFindList findList;
 static ViSession defaultRM, instr;
 static ViStatus status;
 
+/*   GLOBAL VARIABLES   */
+int rsrcIndx, instFound;
+char instDescLog[LOG_MAX][VI_FIND_BUFLEN] = { {0} };
+ViSession* instrLog[LOG_MAX];
 
-int connectToRsrc(void) {
-    printf("Select this device? (y/n)\n");
+/*  Logs instrDescriptor, &instr, and iterates rsrcIndx while scanning for resources.   */
+static void logResource(void) {
+    strcpy(instDescLog[rsrcIndx], instrDescriptor);
+    instrLog[rsrcIndx] = &instr;
+
+    rsrcIndx++;
+}
+
+/*  Prompts input to select which resource to open a session to.    */
+static void connectToRsrc(void) {
     fflush(stdin);
-    char input = getchar();
-    if (input == 'y' || input == 'Y') {
-        printf("Session opened\n");
+    int input;
+    getIntegerFromStdin(&input);
+    if (0 <= input && input <= instFound - 1) {
+        printf("Opening session to resource %s\n", instDescLog[input]);
     }
     else {
-        printf("Closing session\n\n");
-
-        return 0;
+        printf("Invalid input: integer out of range.\n");
+        connectToRsrc();
+    }  
+    /* Now open a session to the resource*/
+    status = viOpen(defaultRM, instDescLog[input], VI_NULL, VI_NULL, &instrLog[input]);
+    if (status < VI_SUCCESS)
+    {
+        printf("An error occurred opening a session to %s\n", instrDescriptor);
+    }
+    else
+    {
+        printf("based\n");
+        viClose(instr);
     }
 
-    
 }
 
 int main(void) {
@@ -79,9 +105,10 @@ int main(void) {
       viClose (defaultRM);
       return status;
    }
-
+   instFound = numInstrs;
    printf("%d instruments, serial ports, and other resources found:\n\n",numInstrs);
-   printf("%s \n",instrDescriptor);
+   printf("%3d --- %s\n", rsrcIndx, instrDescriptor);
+   // printf("%s \n",instrDescriptor);
 
    /* Now we will open a session to the instrument we just found. */
    status = viOpen (defaultRM, instrDescriptor, VI_NULL, VI_NULL, &instr);
@@ -91,8 +118,8 @@ int main(void) {
    }
    else
    {
-     connectToRsrc();
-     viClose (instr);
+      logResource();
+      viClose (instr);
    }
         
    while (--numInstrs)
@@ -107,7 +134,8 @@ int main(void) {
          viClose (defaultRM);
          return status; 
       } 
-      printf("%s \n",instrDescriptor);
+      printf("%3d --- %s\n", rsrcIndx, instrDescriptor);
+      //printf("%s \n",instrDescriptor);
     
       /* Now we will open a session to the instrument we just found */
       status = viOpen (defaultRM, instrDescriptor, VI_NULL, VI_NULL, &instr);
@@ -117,13 +145,22 @@ int main(void) {
       }
       else
       {
-         connectToRsrc();
-         viClose (instr);
+          logResource();
+          viClose (instr);
       }
    }    /* end while */
 
-   printf("\nAll resources iterated: Closing program.\n");
-   
+   /* List all resources and prompt user to select one to open */
+   printf("\nPlease enter a resource index to open:\n");
+   /*
+   for (rsrcIndx = 0; rsrcIndx < instFound; rsrcIndx++) {
+       printf("%3d --- %s\n", rsrcIndx, instDescLog[rsrcIndx]);
+       //printf("%x\n", instrLog[rsrcIndx]);
+   } */
+   connectToRsrc();
+
+
+   /* Close program */
    status = viClose(findList);
    status = viClose(defaultRM);
    printf("Hit enter to continue.");
