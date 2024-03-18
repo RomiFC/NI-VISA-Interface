@@ -69,7 +69,6 @@ static void connectToRsrc(void) {
     if (status < VI_SUCCESS)
     {
         printf("An error occurred opening a session to %s\n", instrDescriptor);
-        connectToRsrc();
     }
     else
     {   /* Set timeout value and send an *IDN? query */
@@ -91,11 +90,10 @@ static void connectToRsrc(void) {
         {
             printf("%*s\n", retCount, buffer);
         }
-
-        viClose(instrLog[input]);
-        connectToRsrc();
     }
 
+    viClose(instrLog[input]);
+    connectToRsrc();
 }
 
 int main(void) {
