@@ -25,7 +25,8 @@
 
 /*   CONSTANTS   */
 #define LOG_MAX 256     // Maximum amount of scanned resources to log
-#define TIMEOUT_MS 2000 //  VISA timeout in milliseconds
+#define TIMEOUT_MS 2000 // VISA timeout in milliseconds
+#define READ_BYTES 100  // How many bytes to read on viRead 
 
 /*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
@@ -37,15 +38,16 @@ static ViUInt32 retCount;
 static ViUInt32 writeCount;
 
 /*   GLOBAL VARIABLES   */
-int rsrcIndx, instFound;
-int input;
-char instDescLog[LOG_MAX][VI_FIND_BUFLEN] = { {0} };
-ViSession* instrLog[LOG_MAX];
+int rsrcIndx;           // Stores the VISA parameter 'instr'
+int instFound;          // Stores the VISA parameter 'numInstr'
+int rsrcSelect;         // Stores the index of instrLog[] which is then passed to VISA functions as 'instr'
+char instDescLog[LOG_MAX][VI_FIND_BUFLEN] = { {0} };    // Array which stores the VISA string 'instrDescriptor'
+ViSession* instrLog[LOG_MAX];                           // Array which stores VISA parameter 'instr'
 static unsigned char buffer[100];
 static char stringinput[512];
 
 /*  Saves instrDescriptor, & instr, and iterates rsrcIndx while scanning for resources. */
-static void logResource(void) {
+static void logResource() {
     strcpy(instDescLog[rsrcIndx], instrDescriptor);
     instrLog[rsrcIndx] = &instr;
 
@@ -53,38 +55,45 @@ static void logResource(void) {
 }
 
 /*  Prompts input to select which resource to open a session to.    */
-static void connectToRsrc(void) {
+static int connectToRsrc() {
+    int errorFlag = 0;
+
     printf("\nPlease enter a resource index to open:\n");
     fflush(stdin);
-    getIntegerFromStdin(&input);
-    if (0 <= input && input <= instFound - 1) {
-        printf("Opening session to resource %s\n", instDescLog[input]);
+    getIntegerFromStdin(&rsrcSelect);
+    if (0 <= rsrcSelect && rsrcSelect <= instFound - 1) {
+        printf("\n ------------------------------------- \n");
+        printf("Opening session to resource %s\n", instDescLog[rsrcSelect]);
     }
     else {
         printf("Invalid input: integer out of range.\n");
-        connectToRsrc();
+        errorFlag = 1;
+        goto Close;
     }  
     /* Now open a session to the resource*/
-    status = viOpen(defaultRM, instDescLog[input], VI_NULL, VI_NULL, &instrLog[input]);
+    status = viOpen(defaultRM, instDescLog[rsrcSelect], VI_NULL, VI_NULL, &instrLog[rsrcSelect]);
     if (status < VI_SUCCESS)
     {
         printf("An error occurred opening a session to %s\n", instrDescriptor);
+        errorFlag = 1;
     }
     else
     {   /* Set timeout value and send an *IDN? query */
-        status = viSetAttribute(instrLog[input], VI_ATTR_TMO_VALUE, TIMEOUT_MS);
+        status = viSetAttribute(instrLog[rsrcSelect], VI_ATTR_TMO_VALUE, TIMEOUT_MS);
 
         strcpy(stringinput, "*IDN?");
-        status = viWrite(instrLog[input], (ViBuf)stringinput, (ViUInt32)strlen(stringinput), &writeCount);
+        status = viWrite(instrLog[rsrcSelect], (ViBuf)stringinput, (ViUInt32)strlen(stringinput), &writeCount);
         if (status < VI_SUCCESS)
         {
             printf("Error writing *IDN? to the device\n");
+            errorFlag = 1;
         }
 
-        status = viRead(instrLog[input], buffer, 100, &retCount);
+        status = viRead(instrLog[rsrcSelect], buffer, READ_BYTES, &retCount);
         if (status < VI_SUCCESS)
         {
             printf("Error reading *IDN? response from the device\n");
+            errorFlag = 1;
         }
         else
         {
@@ -92,8 +101,14 @@ static void connectToRsrc(void) {
         }
     }
 
-    viClose(instrLog[input]);
-    connectToRsrc();
+    Close:
+    viClose(instrLog[rsrcSelect]);
+    return errorFlag;
+}
+
+/*  Defines user actions once connected to a resource */
+static void optionsMenu() {
+
 }
 
 int main(void) {
@@ -174,8 +189,13 @@ int main(void) {
    }    /* end while */
 
    /* List all resources and prompt user to select one to open */
-   connectToRsrc();
+   int exitFlag;
+   do {
+       exitFlag = connectToRsrc();
+   } while (exitFlag);
 
+   /* User actions for opened resource */
+   optionsMenu();
 
    /* Close program */
    printf("Closing Program\nHit enter to continue.");
