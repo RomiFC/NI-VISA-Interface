@@ -148,6 +148,8 @@ static int connectToRsrc() {
 
 /**
  * @brief Finite state machine that handles user options once connected to a resource.
+ * 
+ * @return 0 on success (exit), 1 on error, 2 when the function should be called again to change states.
  */
 static int optionsMenuFSM() {
     switch (menuState) {
@@ -169,8 +171,20 @@ static int optionsMenuFSM() {
             visaSendCommandFromStdin();
             enterToContinue();
             return RETURN_LOOP;
+        default:
+            goto errInvInput;
         }
+    default:
+        goto errInvState;
     }
+
+errInvState:
+    printf("Error: Menu state invalid.");
+    return RETURN_ERROR;
+
+errInvInput:
+    printf("Error: Input variable invalid.");
+    return RETURN_ERROR;
 }
 
 

@@ -1,6 +1,6 @@
 
 #define READ_BYTES 100  // How many bytes to read on viRead 
-#define CHARACTER_MAX 6 // How many characters to store on input from visaSendCommandFromStdin
+#define CHARACTER_MAX 128 // How many characters to store on input from visaSendCommandFromStdin
 
 /**
  * @brief Sends the *IDN? command to the instrument at instrLog[rsrcSelect] and reads its response.
@@ -80,6 +80,4 @@ void visaSendCommandFromStdin() {
         printf("Response:\n");
         printf("%*s\n", retCount, buffer);
     }
-
-    getchar(); // idk why this is needed but program takes an extra 'enter' input for some reason
 }
