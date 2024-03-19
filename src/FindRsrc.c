@@ -36,6 +36,7 @@
 #define MAINMENU 1
 #define SPECAN 2
 #define IDENTIFY 1
+#define SEND 2
 
 /*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
@@ -153,14 +154,20 @@ static int optionsMenuFSM() {
     case MAINMENU:
         printf("\n--------- MAIN MENU --------\n");
         printf(" Please select an option:\n");
-        printf("0: Exit program.\n");
-        printf("1: Identify.\n");
+        printf("%d: Exit program.\n", EXIT);
+        printf("%d: Identify resource.\n", IDENTIFY);
+        printf("%d: Send command.\n", SEND);
 
-        switch (getInput(1)) {
+        switch (getInput(2)) {
         case EXIT:
             return RETURN_SUCCESS;
         case IDENTIFY:
             visaIdentify();
+            enterToContinue();
+            return RETURN_LOOP;
+        case SEND:
+            visaSendCommandFromStdin();
+            enterToContinue();
             return RETURN_LOOP;
         }
     }
