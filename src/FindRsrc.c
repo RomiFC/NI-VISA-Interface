@@ -23,10 +23,15 @@
 #include "visa.h"
 #include "integer-input.h"
 
+
 /*   CONSTANTS   */
 #define LOG_MAX 256     // Maximum amount of scanned resources to log
 #define TIMEOUT_MS 2000 // VISA timeout in milliseconds
 #define READ_BYTES 100  // How many bytes to read on viRead 
+
+/*   STATE CONSTANTS    */
+#define MAINMENU 1
+#define SUBMENU
 
 /*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
@@ -46,7 +51,9 @@ ViSession* instrLog[LOG_MAX];                           // Array which stores VI
 static unsigned char buffer[100];
 static char stringinput[512];
 
-/*  Saves instrDescriptor, & instr, and iterates rsrcIndx while scanning for resources. */
+/**
+ * @brief Saves instrDescriptor and instr, then iterates rsrcIndx while scanning for resources.
+ */
 static void logResource() {
     strcpy(instDescLog[rsrcIndx], instrDescriptor);
     instrLog[rsrcIndx] = &instr;
@@ -54,7 +61,29 @@ static void logResource() {
     rsrcIndx++;
 }
 
-/*  Prompts input to select which resource to open a session to.    */
+/**
+ * @brief Prompts user input for integer within range(0 - rangeMax) and tests for validity.
+ * 
+ * @param rangeMax Maximum integer value that user can input.
+ * @return User input
+ */
+static int getInput(int rangeMax) {
+    int input;
+    fflush(stdin);
+    getIntegerFromStdin(&input);
+    if (0 <= input && input <= rangeMax) {
+        return input;
+    }
+    else {
+        printf("Invalid input: integer out of range.\n");
+    }
+}
+
+/**
+ * @brief Prompts input to select which resource to open a session to.
+ * 
+ * @return 1 on error, 0 otherwise.
+ */
 static int connectToRsrc() {
     int errorFlag = 0;
 
@@ -86,14 +115,12 @@ static int connectToRsrc() {
         if (status < VI_SUCCESS)
         {
             printf("Error writing *IDN? to the device\n");
-            errorFlag = 1;
         }
 
         status = viRead(instrLog[rsrcSelect], buffer, READ_BYTES, &retCount);
         if (status < VI_SUCCESS)
         {
             printf("Error reading *IDN? response from the device\n");
-            errorFlag = 1;
         }
         else
         {
@@ -106,13 +133,15 @@ static int connectToRsrc() {
     return errorFlag;
 }
 
-/*  Defines user actions once connected to a resource */
-static void optionsMenu() {
+/**
+ * @brief Finite state machine that handles user options once connected to a resource.
+ */
+static void optionsMenuFSM() {
 
 }
 
 int main(void) {
-   /* First we will need to open the default resource manager. */
+   /* Open the default resource manager. */
    status = viOpenDefaultRM (&defaultRM);
    if (status < VI_SUCCESS)
    {
@@ -195,7 +224,7 @@ int main(void) {
    } while (exitFlag);
 
    /* User actions for opened resource */
-   optionsMenu();
+   optionsMenuFSM();
 
    /* Close program */
    printf("Closing Program\nHit enter to continue.");
