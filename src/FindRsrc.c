@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include "visa.h"
 #include "integer-input.h"
+#include "visacommands.h"
 
 
 /*   CONSTANTS   */
@@ -32,8 +33,11 @@
 /*   STATE CONSTANTS    */
 #define RETURN_SUCCESS 0
 #define RETURN_ERROR 1
+#define RETURN_LOOP 2
+#define EXIT 0
 #define MAINMENU 1
-#define SUBMENU
+#define SPECAN 2
+#define IDENTIFY 1
 
 /*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
@@ -43,6 +47,9 @@ static ViSession defaultRM, instr;
 static ViStatus status;
 static ViUInt32 retCount;
 static ViUInt32 writeCount;
+
+/*   STATE VARIABLES    */
+int menuState;
 
 /*   GLOBAL VARIABLES   */
 int rsrcIndx;           // Stores the VISA parameter 'instr'
@@ -138,9 +145,24 @@ static int connectToRsrc() {
 /**
  * @brief Finite state machine that handles user options once connected to a resource.
  */
-static void optionsMenuFSM() {
+static int optionsMenuFSM() {
+    switch (menuState) {
+    case MAINMENU:
+        printf("------ MAIN MENU -----\n");
+        printf(" Please select an option:\n");
+        printf("0: Exit program.\n");
+        printf("1: Identify.\n");
 
+        switch (getInput(1)) {
+        case EXIT:
+            return RETURN_SUCCESS;
+        case IDENTIFY:
+            return RETURN_LOOP;
+        }
+
+    }
 }
+
 
 int main(void) {
    /* Open the default resource manager. */
@@ -223,10 +245,14 @@ int main(void) {
    int exitFlag;
    do {
        exitFlag = connectToRsrc();
-   } while (exitFlag == RETURN_ERROR);
+   } while (exitFlag != RETURN_SUCCESS);
 
    /* User actions for opened resource */
-   optionsMenuFSM();
+   menuState = MAINMENU;
+   do {
+       exitFlag = optionsMenuFSM();
+   } while (exitFlag != RETURN_SUCCESS);
+   
 
    /* Close program */
    printf("Closing Program\nHit enter to continue.");
