@@ -22,13 +22,11 @@
 #include <stdlib.h>
 #include "visa.h"
 #include "integer-input.h"
-#include "visacommands.h"
 
 
 /*   CONSTANTS   */
 #define LOG_MAX 256     // Maximum amount of scanned resources to log
 #define TIMEOUT_MS 2000 // VISA timeout in milliseconds
-#define READ_BYTES 100  // How many bytes to read on viRead 
 
 /*   STATE CONSTANTS    */
 #define RETURN_SUCCESS 0
@@ -60,6 +58,8 @@ ViSession* instrLog[LOG_MAX];                           // Array which stores VI
 static unsigned char buffer[100];
 static char stringinput[512];
 
+#include "visacommands.h"
+
 /**
  * @brief Saves instrDescriptor and instr, then iterates rsrcIndx while scanning for resources.
  */
@@ -78,6 +78,7 @@ static void logResource() {
  */
 static int getInput(int rangeMax) {
     int input;
+    printf("\n");
     fflush(stdin);
     getIntegerFromStdin(&input);
     if (0 <= input && input <= rangeMax) {
@@ -94,7 +95,7 @@ static int getInput(int rangeMax) {
  * @return 1 on error, 0 otherwise.
  */
 static int connectToRsrc() {
-    int errorFlag = RETURN_SUCCESS;
+    int errorFlag;
 
     printf("\nPlease enter a resource index to open:\n");
     fflush(stdin);
@@ -112,7 +113,7 @@ static int connectToRsrc() {
     status = viOpen(defaultRM, instDescLog[rsrcSelect], VI_NULL, VI_NULL, &instrLog[rsrcSelect]);
     if (status < VI_SUCCESS)
     {
-        printf("An error occurred opening a session to %s\n", instrDescriptor);
+        printf("Error code 0x%X. An error occurred opening a session to %s\n", status, instrDescriptor);
         errorFlag = RETURN_ERROR;
     }
     else
@@ -123,13 +124,13 @@ static int connectToRsrc() {
         status = viWrite(instrLog[rsrcSelect], (ViBuf)stringinput, (ViUInt32)strlen(stringinput), &writeCount);
         if (status < VI_SUCCESS)
         {
-            printf("Error writing *IDN? to the device\n");
+            printf("Error code 0x%X. Error writing *IDN? to the device\n", status);
         }
 
-        status = viRead(instrLog[rsrcSelect], buffer, READ_BYTES, &retCount);
+        status = viRead(instrLog[rsrcSelect], buffer, 100, &retCount);
         if (status < VI_SUCCESS)
         {
-            printf("Error reading *IDN? response from the device\n");
+            printf("Error code 0x%X. Error reading *IDN? response from the device\n", status);
         }
         else
         {
@@ -137,9 +138,11 @@ static int connectToRsrc() {
         }
     }
 
+    return RETURN_SUCCESS;
+
     Close:
     viClose(instrLog[rsrcSelect]);
-    return errorFlag;
+    return RETURN_ERROR;
 }
 
 /**
@@ -148,7 +151,7 @@ static int connectToRsrc() {
 static int optionsMenuFSM() {
     switch (menuState) {
     case MAINMENU:
-        printf("------ MAIN MENU -----\n");
+        printf("\n--------- MAIN MENU --------\n");
         printf(" Please select an option:\n");
         printf("0: Exit program.\n");
         printf("1: Identify.\n");
@@ -157,9 +160,9 @@ static int optionsMenuFSM() {
         case EXIT:
             return RETURN_SUCCESS;
         case IDENTIFY:
+            visaIdentify();
             return RETURN_LOOP;
         }
-
     }
 }
 
@@ -169,7 +172,7 @@ int main(void) {
    status = viOpenDefaultRM (&defaultRM);
    if (status < VI_SUCCESS)
    {
-      printf("Could not open a session to the VISA Resource Manager!\n");
+      printf("Error code 0x%X. Could not open a session to the VISA Resource Manager!\n", status);
       exit (EXIT_FAILURE);
    }  
 
@@ -206,7 +209,7 @@ int main(void) {
    status = viOpen (defaultRM, instrDescriptor, VI_NULL, VI_NULL, &instr);
    if (status < VI_SUCCESS)
    {
-      printf ("An error occurred opening a session to %s\n",instrDescriptor);
+      printf ("Error code 0x%X. An error occurred opening a session to %s\n", status, instrDescriptor);
    }
    else
    {
@@ -220,7 +223,7 @@ int main(void) {
       status = viFindNext (findList, instrDescriptor);  /* find next desriptor */
       if (status < VI_SUCCESS) 
       {   /* did we find the next resource? */
-         printf ("An error occurred finding the next resource.\nHit enter to continue.");
+         printf ("Error code 0x%X. An error occurred finding the next resource.\nHit enter to continue.", status);
          fflush(stdin);
          getchar();
          viClose (defaultRM);
@@ -232,7 +235,7 @@ int main(void) {
       status = viOpen (defaultRM, instrDescriptor, VI_NULL, VI_NULL, &instr);
       if (status < VI_SUCCESS)
       {
-          printf ("An error occurred opening a session to %s\n",instrDescriptor);
+          printf ("Error code 0x%X. An error occurred opening a session to %s\n", status, instrDescriptor);
       }
       else
       {
