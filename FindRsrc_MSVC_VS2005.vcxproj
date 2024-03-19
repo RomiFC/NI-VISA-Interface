@@ -261,12 +261,9 @@
     <ClInclude Include="include\vpptype.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\FindRsrc.c">
+    <ClCompile Include="src\main.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="src\RdWrt.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
