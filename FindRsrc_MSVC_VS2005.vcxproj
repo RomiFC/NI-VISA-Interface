@@ -254,6 +254,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\integer-input.h" />
+    <ClInclude Include="include\visacommands.h" />
     <ClInclude Include="include\visa.h" />
     <ClInclude Include="include\visaext.h" />
     <ClInclude Include="include\visatype.h" />
