@@ -30,6 +30,8 @@
 #define READ_BYTES 100  // How many bytes to read on viRead 
 
 /*   STATE CONSTANTS    */
+#define RETURN_SUCCESS 0
+#define RETURN_ERROR 1
 #define MAINMENU 1
 #define SUBMENU
 
@@ -57,7 +59,7 @@ static char stringinput[512];
 static void logResource() {
     strcpy(instDescLog[rsrcIndx], instrDescriptor);
     instrLog[rsrcIndx] = &instr;
-
+    
     rsrcIndx++;
 }
 
@@ -85,7 +87,7 @@ static int getInput(int rangeMax) {
  * @return 1 on error, 0 otherwise.
  */
 static int connectToRsrc() {
-    int errorFlag = 0;
+    int errorFlag = RETURN_SUCCESS;
 
     printf("\nPlease enter a resource index to open:\n");
     fflush(stdin);
@@ -96,7 +98,7 @@ static int connectToRsrc() {
     }
     else {
         printf("Invalid input: integer out of range.\n");
-        errorFlag = 1;
+        errorFlag = RETURN_ERROR;
         goto Close;
     }  
     /* Now open a session to the resource*/
@@ -104,7 +106,7 @@ static int connectToRsrc() {
     if (status < VI_SUCCESS)
     {
         printf("An error occurred opening a session to %s\n", instrDescriptor);
-        errorFlag = 1;
+        errorFlag = RETURN_ERROR;
     }
     else
     {   /* Set timeout value and send an *IDN? query */
@@ -221,7 +223,7 @@ int main(void) {
    int exitFlag;
    do {
        exitFlag = connectToRsrc();
-   } while (exitFlag);
+   } while (exitFlag == RETURN_ERROR);
 
    /* User actions for opened resource */
    optionsMenuFSM();
