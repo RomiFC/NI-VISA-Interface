@@ -1,9 +1,12 @@
 
 
-#define READ_BYTES 1024   // How many bytes to read on viRead 
-#define CHARACTER_MAX 256 // How many characters to store on input from visaWriteFromStdin and visaWrite
-#define TIMEOUT_MIN 1000  // Minimum VISA timeout value
-#define TIMEOUT_MAX 25000 // Maximum VISA timeout value
+#define READ_BYTES 4096         // Default byte count to read when issuing viRead
+#define MAX_READ_BYTES 1048576  // Max read bytes allowed
+#define CHARACTER_MAX 256       // How many characters to store on input from visaWriteFromStdin and visaWrite
+#define TIMEOUT_MIN 1000        // Minimum VISA timeout value
+#define TIMEOUT_MAX 25000       // Maximum VISA timeout value
+
+int readBytes;
 
 /**
  * @brief Sends the *IDN? command to the instrument at instrLog[rsrcSelect] and reads its response.
@@ -30,7 +33,7 @@ void visaIdentify() {
 }
 
 /**
- * @brief Gets a string from the standard input and appends it with a null terminator (as opposed to newline)
+ * @brief Gets a string from the standard input and appends it with a null terminator (as opposed to newline).
  * @param str String that is received from standard input
  * @param n Amount of characters allotted to the string array (Can read n-1 characters)
  */
@@ -58,7 +61,7 @@ void enterToContinue() {
 
 /**
  * @brief Sets timeout value to user input integer.
- * The resource manager and a session to the device must be opened
+ * The resource manager and a session to the device must be opened.
  */
 void visaSetTimeout() {
     printf("Enter desired VISA timeout in milliseconds between %d and %d. Default: %d\n", TIMEOUT_MIN, TIMEOUT_MAX, TIMEOUT_MS);
@@ -81,7 +84,7 @@ void visaSetTimeout() {
 
 /**
  * @brief Sends user input string to the instrument at instrLog[rsrcSelect] and reads its response.
- * The resource manager and a session to the device must be opened
+ * The resource manager and a session to the device must be opened.
  */
 void visaQuery() {
     printf("Enter SCPI command to send.\n");
@@ -110,7 +113,7 @@ void visaQuery() {
 
 /**
  * @brief Sends user input string to the instrument at instrLog[rsrcSelect].
- * The resource manager and a session to the device must be opened
+ * The resource manager and a session to the device must be opened.
  */
 void visaWriteFromStdin() {
     printf("Enter SCPI command to send.\n");
@@ -126,6 +129,11 @@ void visaWriteFromStdin() {
     }
 }
 
+/**
+ * @brief Sends function input string to the instrument at instrLog[rsrcSelect].
+ * The resource manager and a session to the device must be opened.
+ * @param string Function input which will be send to the instrument
+ */
 void visaWrite(char string[CHARACTER_MAX]) {
     printf("Sending %s to the device...\n", string);
 
@@ -139,10 +147,14 @@ void visaWrite(char string[CHARACTER_MAX]) {
 
 /**
  * @brief Reads response from the instrument at instrLog[rsrcSelect]
- * The resource manager and a session to the device must be opened
+ * The resource manager and a session to the device must be opened.
  */
 void visaRead() {
-    status = viRead(instrLog[rsrcSelect], buffer, READ_BYTES, &retCount);
+    if (readBytes == 0) {
+        readBytes = READ_BYTES;
+    }
+
+    status = viRead(instrLog[rsrcSelect], buffer, readBytes, &retCount);
     if (status == VI_SUCCESS_TERM_CHAR || status == VI_SUCCESS_MAX_CNT) {
         printf("Warning %X: No termination character or END indicator received. Increase read bytes to fix.\n\n", status);
     }
@@ -155,4 +167,10 @@ void visaRead() {
         printf("%d bytes returned:\n", retCount);
         printf("%*s\n", retCount, buffer);
     }
+}
+
+void visaSetReadBytes() {
+    printf("Enter a value of bytes to read. Default: %d bytes. Max: %d bytes.\n", READ_BYTES, MAX_READ_BYTES);
+    int ret = getInput(MAX_READ_BYTES);
+    printf("Confirmed: Read count set to %d bytes.\n", ret);
 }

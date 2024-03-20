@@ -42,6 +42,7 @@
 #define WRITE 4
 #define READ 5
 #define SET_TIMEOUT 6
+#define SET_READ 7
 #define NEXT 9
 #define MEM_CATALOG 1
 
@@ -172,6 +173,7 @@ static int optionsMenuFSM() {
         printf("%d: Write command.\n", WRITE);
         printf("%d: Read command.\n", READ);
         printf("%d: Set timeout.\n", SET_TIMEOUT);
+        printf("%d: Set read bytes.\n", SET_READ);
         printf("%d: Memory options.\n", NEXT);
 
         switch (getInput(9)) {
@@ -198,6 +200,10 @@ static int optionsMenuFSM() {
             return RETURN_LOOP;
         case SET_TIMEOUT:
             visaSetTimeout();
+            enterToContinue();
+            return RETURN_LOOP;
+        case SET_READ:
+            visaSetReadBytes();
             enterToContinue();
             return RETURN_LOOP;
         case NEXT:
