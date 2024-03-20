@@ -1,6 +1,9 @@
 
-#define READ_BYTES 100  // How many bytes to read on viRead 
+
+#define READ_BYTES 1024   // How many bytes to read on viRead 
 #define CHARACTER_MAX 128 // How many characters to store on input from visaSendCommandFromStdin
+#define TIMEOUT_MIN 1000  // Minimum VISA timeout value
+#define TIMEOUT_MAX 25000 // Maximum VISA timeout value
 
 /**
  * @brief Sends the *IDN? command to the instrument at instrLog[rsrcSelect] and reads its response.
@@ -51,6 +54,29 @@ void enterToContinue() {
     printf("Hit enter to continue.\n");
     fflush(stdin);
     getchar();
+}
+
+/**
+ * @brief Sets timeout value to user input integer.
+ * The resource manager and a session to the device must be opened
+ */
+void visaSetTimeout() {
+    printf("Enter desired VISA timeout in milliseconds between %d and %d. Default: %d\n", TIMEOUT_MIN, TIMEOUT_MAX, TIMEOUT_MS);
+    int timeout;
+    int errorFlag = 1;
+    do {
+        timeout = getInput(TIMEOUT_MAX);
+        if (TIMEOUT_MIN <= timeout && timeout <= TIMEOUT_MAX) {
+            errorFlag = 0;
+        }
+        else {
+            printf("Invalid input: integer out of range.\n");
+        }
+    } while (errorFlag);
+
+    status = viSetAttribute(instrLog[rsrcSelect], VI_ATTR_TMO_VALUE, timeout);
+    float timeoutFloat = timeout;
+    printf("New timeout value: %.3f seconds\n", timeoutFloat / 1000);
 }
 
 /**

@@ -26,7 +26,7 @@
 
 /*   CONSTANTS   */
 #define LOG_MAX 256     // Maximum amount of scanned resources to log
-#define TIMEOUT_MS 2000 // VISA timeout in milliseconds
+#define TIMEOUT_MS 2500 // Default VISA timeout in milliseconds
 
 /*   STATE CONSTANTS    */
 #define RETURN_SUCCESS 0
@@ -34,12 +34,15 @@
 #define RETURN_LOOP 2
 #define MAINMENU 10
 #define RSRC_SELECT 20
+#define MEMORY 30
 #define EXIT 0
 #define CHANGE 1
 #define IDENTIFY 2
 #define QUERY 3
 #define WRITE 4
 #define READ 5
+#define SET_TIMEOUT 6
+#define NEXT 9
 
 /*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
@@ -80,7 +83,7 @@ static void logResource() {
  * @param rangeMax Maximum integer value that user can input.
  * @return User input
  */
-static int getInput(int rangeMax) {
+int getInput(int rangeMax) {
     int input;
     printf("\n");
     fflush(stdin);
@@ -90,6 +93,7 @@ static int getInput(int rangeMax) {
     }
     else {
         printf("Invalid input: integer out of range.\n");
+        getInput(rangeMax);
     }
 }
 
@@ -166,8 +170,10 @@ static int optionsMenuFSM() {
         printf("%d: Query command.\n", QUERY);
         printf("%d: Write command.\n", WRITE);
         printf("%d: Read command.\n", READ);
+        printf("%d: Set timeout.\n", SET_TIMEOUT);
+        printf("%d: Memory options.\n", NEXT);
 
-        switch (getInput(5)) {
+        switch (getInput(9)) {
         case EXIT:
             return RETURN_SUCCESS;
         case CHANGE:
@@ -189,8 +195,24 @@ static int optionsMenuFSM() {
             visaRead();
             enterToContinue();
             return RETURN_LOOP;
+        case SET_TIMEOUT:
+            visaSetTimeout();
+            enterToContinue();
+            return RETURN_LOOP;
+        case NEXT:
+            menuState = MEMORY;
+            return RETURN_LOOP;
         default:
             goto errInvInput;
+        }
+    case MEMORY:
+        printf("\n--------- MEMORY COMMANDS --------\n");
+        printf(" Please select an option:\n");
+        printf("%d: Previous page.\n", EXIT);
+        printf("%d: Connect to a different resource.\n", CHANGE);
+        
+        switch (getInput(3)) {
+
         }
     case RSRC_SELECT:
         viClose(instrLog[rsrcSelect]);
