@@ -32,11 +32,12 @@
 #define RETURN_SUCCESS 0
 #define RETURN_ERROR 1
 #define RETURN_LOOP 2
+#define MAINMENU 10
+#define RSRC_SELECT 20
 #define EXIT 0
-#define MAINMENU 1
-#define SPECAN 2
-#define IDENTIFY 1
-#define SEND 2
+#define CHANGE 1
+#define IDENTIFY 2
+#define SEND 3
 
 /*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
@@ -87,6 +88,16 @@ static int getInput(int rangeMax) {
     }
     else {
         printf("Invalid input: integer out of range.\n");
+    }
+}
+
+/**
+ * @brief Lists resources to terminal in the same manner as done in main when first searching for resources.
+ */
+static void listResources() {
+    printf("%d instruments, serial ports, and other resources found:\n\n", instFound);
+    for (int i = 0; i < instFound; i++) {
+        printf("%3d --- %s\n", i, instDescLog[i]);
     }
 }
 
@@ -157,12 +168,16 @@ static int optionsMenuFSM() {
         printf("\n--------- MAIN MENU --------\n");
         printf(" Please select an option:\n");
         printf("%d: Exit program.\n", EXIT);
+        printf("%d: Connect to a different resource.\n", CHANGE);
         printf("%d: Identify resource.\n", IDENTIFY);
         printf("%d: Send command.\n", SEND);
 
         switch (getInput(2)) {
         case EXIT:
             return RETURN_SUCCESS;
+        case CHANGE:
+            menuState = RSRC_SELECT;
+            return RETURN_LOOP;
         case IDENTIFY:
             visaIdentify();
             enterToContinue();
@@ -174,16 +189,25 @@ static int optionsMenuFSM() {
         default:
             goto errInvInput;
         }
+    case RSRC_SELECT:
+        viClose(instrLog[rsrcSelect]);
+        listResources();
+        int exitFlag;
+        do {
+            exitFlag = connectToRsrc();
+        } while (exitFlag != RETURN_SUCCESS);
+        menuState = MAINMENU;
+        return RETURN_LOOP;
     default:
         goto errInvState;
     }
 
 errInvState:
-    printf("Error: Menu state invalid.");
+    printf("Error: Menu state invalid.\n");
     return RETURN_ERROR;
 
 errInvInput:
-    printf("Error: Input variable invalid.");
+    printf("Error: Input variable invalid.\n");
     return RETURN_ERROR;
 }
 
