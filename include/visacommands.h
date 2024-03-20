@@ -1,7 +1,7 @@
 
 
 #define READ_BYTES 1024   // How many bytes to read on viRead 
-#define CHARACTER_MAX 128 // How many characters to store on input from visaSendCommandFromStdin
+#define CHARACTER_MAX 256 // How many characters to store on input from visaWriteFromStdin and visaWrite
 #define TIMEOUT_MIN 1000  // Minimum VISA timeout value
 #define TIMEOUT_MAX 25000 // Maximum VISA timeout value
 
@@ -112,7 +112,7 @@ void visaQuery() {
  * @brief Sends user input string to the instrument at instrLog[rsrcSelect].
  * The resource manager and a session to the device must be opened
  */
-void visaWrite() {
+void visaWriteFromStdin() {
     printf("Enter SCPI command to send.\n");
     char stringFromStdin[CHARACTER_MAX];
     s_gets(stringFromStdin, CHARACTER_MAX);
@@ -126,19 +126,33 @@ void visaWrite() {
     }
 }
 
+void visaWrite(char string[CHARACTER_MAX]) {
+    printf("Sending %s to the device...\n", string);
+
+    strcpy(stringinput, string);
+    status = viWrite(instrLog[rsrcSelect], (ViBuf)stringinput, (ViUInt32)strlen(stringinput), &writeCount);
+    if (status < VI_SUCCESS)
+    {
+        printf("Error %X: Cannot write %s to the device.\n", status, string);
+    }
+}
+
 /**
  * @brief Reads response from the instrument at instrLog[rsrcSelect]
  * The resource manager and a session to the device must be opened
  */
 void visaRead() {
     status = viRead(instrLog[rsrcSelect], buffer, READ_BYTES, &retCount);
+    if (status == VI_SUCCESS_TERM_CHAR || status == VI_SUCCESS_MAX_CNT) {
+        printf("Warning %X: No termination character or END indicator received. Increase read bytes to fix.\n\n", status);
+    }
     if (status < VI_SUCCESS)
     {
         printf("Error %X: Cannot read response from the device.\n", status);
     }
     else
     {
-        printf("Response:\n");
+        printf("%d bytes returned:\n", retCount);
         printf("%*s\n", retCount, buffer);
     }
 }

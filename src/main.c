@@ -43,6 +43,7 @@
 #define READ 5
 #define SET_TIMEOUT 6
 #define NEXT 9
+#define MEM_CATALOG 1
 
 /*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
@@ -136,7 +137,7 @@ static int connectToRsrc() {
             printf("Error code 0x%X. Error writing *IDN? to the device\n", status);
         }
 
-        status = viRead(instrLog[rsrcSelect], buffer, 100, &retCount);
+        status = viRead(instrLog[rsrcSelect], buffer, 128, &retCount);
         if (status < VI_SUCCESS)
         {
             printf("Error code 0x%X. Error reading *IDN? response from the device\n", status);
@@ -188,7 +189,7 @@ static int optionsMenuFSM() {
             enterToContinue();
             return RETURN_LOOP;
         case WRITE:
-            visaWrite();
+            visaWriteFromStdin();
             enterToContinue();
             return RETURN_LOOP;
         case READ:
@@ -209,10 +210,16 @@ static int optionsMenuFSM() {
         printf("\n--------- MEMORY COMMANDS --------\n");
         printf(" Please select an option:\n");
         printf("%d: Previous page.\n", EXIT);
-        printf("%d: Connect to a different resource.\n", CHANGE);
+        printf("%d: View local memory at C:\\\n", MEM_CATALOG);
         
         switch (getInput(3)) {
-
+        case EXIT:
+            menuState = MAINMENU;
+            return RETURN_LOOP;
+        case MEM_CATALOG:
+            visaWrite(":MMEM:CAT? \"C:\"");
+            visaRead();
+            return RETURN_LOOP;
         }
     case RSRC_SELECT:
         viClose(instrLog[rsrcSelect]);
