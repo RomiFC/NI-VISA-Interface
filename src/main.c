@@ -37,7 +37,9 @@
 #define EXIT 0
 #define CHANGE 1
 #define IDENTIFY 2
-#define SEND 3
+#define QUERY 3
+#define WRITE 4
+#define READ 5
 
 /*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
@@ -73,7 +75,7 @@ static void logResource() {
 }
 
 /**
- * @brief Prompts user input for integer within range(0 - rangeMax) and tests for validity.
+ * @brief Prompts user input for integer within range (0 to rangeMax) and tests for validity.
  * 
  * @param rangeMax Maximum integer value that user can input.
  * @return User input
@@ -161,9 +163,11 @@ static int optionsMenuFSM() {
         printf("%d: Exit program.\n", EXIT);
         printf("%d: Connect to a different resource.\n", CHANGE);
         printf("%d: Identify resource.\n", IDENTIFY);
-        printf("%d: Send command.\n", SEND);
+        printf("%d: Query command.\n", QUERY);
+        printf("%d: Write command.\n", WRITE);
+        printf("%d: Read command.\n", READ);
 
-        switch (getInput(2)) {
+        switch (getInput(5)) {
         case EXIT:
             return RETURN_SUCCESS;
         case CHANGE:
@@ -173,8 +177,16 @@ static int optionsMenuFSM() {
             visaIdentify();
             enterToContinue();
             return RETURN_LOOP;
-        case SEND:
-            visaSendCommandFromStdin();
+        case QUERY:
+            visaQuery();
+            enterToContinue();
+            return RETURN_LOOP;
+        case WRITE:
+            visaWrite();
+            enterToContinue();
+            return RETURN_LOOP;
+        case READ:
+            visaRead();
             enterToContinue();
             return RETURN_LOOP;
         default:

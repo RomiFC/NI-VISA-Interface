@@ -57,7 +57,7 @@ void enterToContinue() {
  * @brief Sends user input string to the instrument at instrLog[rsrcSelect] and reads its response.
  * The resource manager and a session to the device must be opened
  */
-void visaSendCommandFromStdin() {
+void visaQuery() {
     printf("Enter SCPI command to send.\n");
     char stringFromStdin[CHARACTER_MAX];
     s_gets(stringFromStdin, CHARACTER_MAX);
@@ -70,6 +70,41 @@ void visaSendCommandFromStdin() {
         printf("Error %X: Cannot write %s to the device.\n", status, stringFromStdin);
     }
 
+    status = viRead(instrLog[rsrcSelect], buffer, READ_BYTES, &retCount);
+    if (status < VI_SUCCESS)
+    {
+        printf("Error %X: Cannot read response from the device.\n", status);
+    }
+    else
+    {
+        printf("Response:\n");
+        printf("%*s\n", retCount, buffer);
+    }
+}
+
+/**
+ * @brief Sends user input string to the instrument at instrLog[rsrcSelect].
+ * The resource manager and a session to the device must be opened
+ */
+void visaWrite() {
+    printf("Enter SCPI command to send.\n");
+    char stringFromStdin[CHARACTER_MAX];
+    s_gets(stringFromStdin, CHARACTER_MAX);
+    printf("Sending %s to the device...\n", stringFromStdin);
+
+    strcpy(stringinput, stringFromStdin);
+    status = viWrite(instrLog[rsrcSelect], (ViBuf)stringinput, (ViUInt32)strlen(stringinput), &writeCount);
+    if (status < VI_SUCCESS)
+    {
+        printf("Error %X: Cannot write %s to the device.\n", status, stringFromStdin);
+    }
+}
+
+/**
+ * @brief Reads response from the instrument at instrLog[rsrcSelect]
+ * The resource manager and a session to the device must be opened
+ */
+void visaRead() {
     status = viRead(instrLog[rsrcSelect], buffer, READ_BYTES, &retCount);
     if (status < VI_SUCCESS)
     {
