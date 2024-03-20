@@ -91,15 +91,6 @@ static int getInput(int rangeMax) {
     }
 }
 
-/**
- * @brief Lists resources to terminal in the same manner as done in main when first searching for resources.
- */
-static void listResources() {
-    printf("%d instruments, serial ports, and other resources found:\n\n", instFound);
-    for (int i = 0; i < instFound; i++) {
-        printf("%3d --- %s\n", i, instDescLog[i]);
-    }
-}
 
 /**
  * @brief Prompts input to select which resource to open a session to.
@@ -191,11 +182,16 @@ static int optionsMenuFSM() {
         }
     case RSRC_SELECT:
         viClose(instrLog[rsrcSelect]);
-        listResources();
+        printf("%d instruments, serial ports, and other resources found:\n\n", instFound);
+        for (int i = 0; i < instFound; i++) {
+            printf("%3d --- %s\n", i, instDescLog[i]);
+        }
+
         int exitFlag;
         do {
             exitFlag = connectToRsrc();
         } while (exitFlag != RETURN_SUCCESS);
+
         menuState = MAINMENU;
         return RETURN_LOOP;
     default:
