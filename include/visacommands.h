@@ -195,6 +195,32 @@ char* visaRead() {
 }
 
 /**
+ * @brief Reads response from the instrument at instrLog[rsrcSelect] without printing to Stdout
+ * The resource manager and a session to the device must be opened.
+ */
+char* visaReadNoPrint() {
+    if (readBytes == 0) {
+        readBytes = READ_BYTES;
+    }
+
+    status = viRead(instrLog[rsrcSelect], buffer, readBytes, &retCount);
+    if (status == VI_SUCCESS_TERM_CHAR || status == VI_SUCCESS_MAX_CNT) {
+        printf("Warning %X: No termination character or END indicator received. Increase read bytes to fix.\n\n", status);
+    }
+    if (status < VI_SUCCESS)
+    {
+        printf("Error %X: Cannot read response from the device.\n", status);
+        return NULL;
+    }
+    else
+    {
+        char* returnString = malloc(readBytes);
+        strcpy(returnString, buffer);
+        return returnString;
+    }
+}
+
+/**
  * @brief Sets amount of return bytes to read on visaRead
  */
 void visaSetReadBytes() {
@@ -252,8 +278,8 @@ void visaGetTraceFromMarkers() {
         break;
     }
 
-    char* startFreqBuffer = malloc(readBytes);
-    char* stopFreqBuffer = malloc(readBytes);
+    char* startFreqBuffer = malloc(sizeof(char) * readBytes);
+    char* stopFreqBuffer = malloc(sizeof(char) * readBytes);
     
     visaWrite(":SENSe:FREQuency:STARt?");
     strcpy(startFreqBuffer, visaRead());
@@ -266,17 +292,27 @@ void visaGetTraceFromMarkers() {
         return;
     }
     else {
-        freqSpacing = (stopFreq - startFreq) / numPoints;
+        freqSpacing = (stopFreq - startFreq) / (numPoints - 1);
         printf("Start frequency: %e, Stop frequency: %e\n", startFreq, stopFreq);
         printf("Number of points: %d, Frequency spacing: %g\n\n", numPoints, freqSpacing);
     }
+
+    double* freq = malloc(sizeof(double) * numPoints);
+    double* amp = malloc(sizeof(double) * numPoints);
+    char buffer[256];
     
     visaWrite(":CALCulate:MARKer:AOff");
     visaWrite(":CALCulate:MARKer1:FUNCtion BPower");
     visaWrite(":CALCulate:MARKer1:FCOunt:STATe ON");
     visaWrite(":CALCulate:MARKer1:MODE POSition");
-    visaWrite(":CALCulate:MARKer1:X?");
-    visaWrite(":CALCulate:MARKer1:Y?");
+
+    for (int i = 0; i < numPoints; i++) {
+        freq[i] = round(startFreq + i * freqSpacing);
+        sprintf(buffer, ":CALCulate:MARKer1:X %f", freq[i]);
+        visaWrite(buffer);
+        visaWrite(":CALCulate:MARKer1:Y?");
+        amp[i] = atof(visaReadNoPrint());
+    }
 
     
 
