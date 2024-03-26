@@ -80,26 +80,6 @@ static void logResource() {
     rsrcIndx++;
 }
 
-/**
- * @brief Prompts user input for integer within range (0 to rangeMax) and tests for validity.
- * 
- * @param rangeMax Maximum integer value that user can input.
- * @return User input
- */
-int getInput(int rangeMax) {
-    int input;
-    printf("\n");
-    fflush(stdin);
-    getIntegerFromStdin(&input);
-    if (0 <= input && input <= rangeMax) {
-        return input;
-    }
-    else {
-        printf("Invalid input: integer out of range.\n");
-        getInput(rangeMax);
-    }
-}
-
 
 /**
  * @brief Prompts input to select which resource to open a session to.
