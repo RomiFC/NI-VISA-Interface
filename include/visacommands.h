@@ -6,6 +6,7 @@
 #define TIMEOUT_MIN 1000        // Minimum VISA timeout value
 #define TIMEOUT_MAX 25000       // Maximum VISA timeout value
 
+
 int readBytes;
 
 /**
@@ -149,7 +150,7 @@ void visaWrite(char string[CHARACTER_MAX]) {
  * @brief Reads response from the instrument at instrLog[rsrcSelect]
  * The resource manager and a session to the device must be opened.
  */
-void visaRead() {
+char* visaRead() {
     if (readBytes == 0) {
         readBytes = READ_BYTES;
     }
@@ -161,16 +162,102 @@ void visaRead() {
     if (status < VI_SUCCESS)
     {
         printf("Error %X: Cannot read response from the device.\n", status);
+        return NULL;
     }
     else
     {
         printf("%d bytes returned:\n", retCount);
         printf("%*s\n", retCount, buffer);
+        char* returnString = malloc(readBytes);
+        strcpy(returnString, buffer);
+        return returnString;
     }
 }
 
+/**
+ * @brief Sets amount of return bytes to read on visaRead
+ */
 void visaSetReadBytes() {
     printf("Enter a value of bytes to read. Default: %d bytes. Max: %d bytes.\n", READ_BYTES, MAX_READ_BYTES);
     int ret = getInput(MAX_READ_BYTES);
     printf("Confirmed: Read count set to %d bytes.\n", ret);
+}
+
+/**
+ * @brief Uses markers to generate a csv of the current trace. Should only be used for devices that don't support file transfer via SCPI.
+ */
+void visaGetTraceFromMarkers() {
+    if (readBytes == 0) {
+        readBytes = READ_BYTES;
+    }
+
+    int numPoints;
+    double startFreq, stopFreq;
+    double freqSpacing;
+
+    printf("-------- SELECT NUMBER OF POINTS --------\n");
+    printf("%d: Back\n", EXIT);
+    printf("1: 101\n");
+    printf("2: 201\n");
+    printf("3: 401\n");
+    printf("4: 801\n");
+    printf("5: 1601\n");
+    printf("6: Set custom\n");
+
+    switch (getInput(6)) {
+    case EXIT:
+        return;
+    case 1:
+        numPoints = 101;
+        break;
+    case 2:
+        numPoints = 201;
+        break;
+    case 3:
+        numPoints = 401;
+        break;
+    case 4:
+        numPoints = 801;
+        break;
+    case 5:
+        numPoints = 1601;
+        break;
+    case 6:
+        printf("Enter number of points to sweep. Min: 21, Max: 24001\n");
+        do {
+            numPoints = getInput(24001);
+            if (numPoints < 21)
+                printf("Invalid input: integer out of range.\n");
+        } while (numPoints < 21);
+        break;
+    }
+
+    char* startFreqBuffer = malloc(readBytes);
+    char* stopFreqBuffer = malloc(readBytes);
+    
+    visaWrite(":SENSe:FREQuency:STARt?");
+    strcpy(startFreqBuffer, visaRead());
+    visaWrite(":SENSe:FREQuency:STOP?");
+    strcpy(stopFreqBuffer, visaRead());
+    startFreq = atof(startFreqBuffer);
+    stopFreq = atof(stopFreqBuffer);
+    if (startFreq < 0 || stopFreq <= 0) {
+        printf("Error: Start or stop frequency could not be read from the device.\n");
+        return;
+    }
+    else {
+        freqSpacing = (stopFreq - startFreq) / numPoints;
+        printf("Start frequency: %e, Stop frequency: %e\n", startFreq, stopFreq);
+        printf("Number of points: %d, Frequency spacing: %g\n\n", numPoints, freqSpacing);
+    }
+    
+    visaWrite(":CALCulate:MARKer:AOff");
+    visaWrite(":CALCulate:MARKer1:FUNCtion BPower");
+    visaWrite(":CALCulate:MARKer1:FCOunt:STATe ON");
+    visaWrite(":CALCulate:MARKer1:MODE POSition");
+    visaWrite(":CALCulate:MARKer1:X?");
+    visaWrite(":CALCulate:MARKer1:Y?");
+
+    
+
 }

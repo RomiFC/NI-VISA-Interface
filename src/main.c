@@ -45,6 +45,7 @@
 #define SET_READ 7
 #define NEXT 9
 #define MEM_CATALOG 1
+#define MEM_SAVE 2
 
 /*   VI VARIABLES   */
 static char instrDescriptor[VI_FIND_BUFLEN];
@@ -164,7 +165,7 @@ static int connectToRsrc() {
 static int optionsMenuFSM() {
     switch (menuState) {
     case MAINMENU:
-        printf("\n--------- MAIN MENU --------\n");
+        printf("\n-------- MAIN MENU --------\n");
         printf(" Please select an option:\n");
         printf("%d: Exit program.\n", EXIT);
         printf("%d: Connect to a different resource.\n", CHANGE);
@@ -217,14 +218,21 @@ static int optionsMenuFSM() {
         printf(" Please select an option:\n");
         printf("%d: Previous page.\n", EXIT);
         printf("%d: View local memory at C:\\\n", MEM_CATALOG);
+        printf("%d: Save trace to computer using markers.\n", MEM_SAVE);
         
         switch (getInput(3)) {
         case EXIT:
             menuState = MAINMENU;
             return RETURN_LOOP;
         case MEM_CATALOG:
+            printf("Return format: <mem_used>, <mem_free>, <file_listing>\n");
+            printf("Where <file_listing> is <file_name>, <file_size> for each file in the directory.\n");
             visaWrite(":MMEM:CAT? \"C:\"");
             visaRead();
+            return RETURN_LOOP;
+        case MEM_SAVE:
+            visaGetTraceFromMarkers();
+            enterToContinue();
             return RETURN_LOOP;
         }
     case RSRC_SELECT:
