@@ -200,7 +200,7 @@ static int optionsMenuFSM() {
         printf(" Please select an option:\n");
         printf("%d: Previous page.\n", EXIT);
         printf("%d: View local memory at C:\\\n", MEM_CATALOG);
-        printf("%d: Save trace to computer using markers.\n", MEM_SAVE);
+        printf("%d: Save trace to computer using markers. (Spectrum Analyzer)\n", MEM_SAVE);
         
         switch (getInput(3)) {
         case EXIT:

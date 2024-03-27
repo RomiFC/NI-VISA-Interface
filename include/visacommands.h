@@ -34,10 +34,10 @@ void visaIdentify() {
 }
 
 /**
- * @brief Prompts user input for integer within range (0 to rangeMax) and tests for validity.
+ * @brief Prompts user input for integer within range (0 to rangeMax) and tests for validity. Recursive on error.
  *
  * @param rangeMax Maximum integer value that user can input.
- * @return User input
+ * @return User input integer provided it is in range.
  */
 int getInput(int rangeMax) {
     int input;
@@ -169,6 +169,8 @@ void visaWrite(char string[CHARACTER_MAX]) {
 /**
  * @brief Reads response from the instrument at instrLog[rsrcSelect]
  * The resource manager and a session to the device must be opened.
+ * 
+ * @return Pointer to the string read from the device.
  */
 char* visaRead() {
     if (readBytes == 0) {
@@ -197,6 +199,8 @@ char* visaRead() {
 /**
  * @brief Reads response from the instrument at instrLog[rsrcSelect] without printing to Stdout
  * The resource manager and a session to the device must be opened.
+ * 
+ * @return Pointer to the string read from the device.
  */
 char* visaReadNoPrint() {
     if (readBytes == 0) {
@@ -231,16 +235,18 @@ void visaSetReadBytes() {
 
 /**
  * @brief Uses markers to generate a csv of the current trace. Should only be used for devices that don't support file transfer via SCPI.
+ * Traces are saved to trace000.csv in the location the program is run.
  */
 void visaGetTraceFromMarkers() {
     if (readBytes == 0) {
         readBytes = READ_BYTES;
     }
 
-    int numPoints;
-    double startFreq, stopFreq;
-    double freqSpacing;
+    int numPoints;                  // Number of points to sweep trace over
+    double startFreq, stopFreq;     //
+    double freqSpacing;             // Spacing in frequency between each swept point
 
+    /* User menu to select sweep points */
     printf("-------- SELECT NUMBER OF POINTS --------\n");
     printf("%d: Back\n", EXIT);
     printf("1: 101\n");
@@ -278,8 +284,9 @@ void visaGetTraceFromMarkers() {
         break;
     }
 
-    char* startFreqBuffer = malloc(sizeof(char) * readBytes);
-    char* stopFreqBuffer = malloc(sizeof(char) * readBytes);
+    /* Get the start and stop frequency from the spec-an by writing commands and converting the response to a float value. */
+    char* startFreqBuffer = malloc(sizeof(char) * readBytes);   // Stores start frequency string read from instrument
+    char* stopFreqBuffer = malloc(sizeof(char) * readBytes);    // Stores stop frequency string read from instrument
     
     visaWrite(":SENSe:FREQuency:STARt?");
     strcpy(startFreqBuffer, visaRead());
@@ -293,27 +300,57 @@ void visaGetTraceFromMarkers() {
     }
     else {
         freqSpacing = (stopFreq - startFreq) / (numPoints - 1);
-        printf("Start frequency: %e, Stop frequency: %e\n", startFreq, stopFreq);
-        printf("Number of points: %d, Frequency spacing: %g\n\n", numPoints, freqSpacing);
     }
 
-    double* freq = malloc(sizeof(double) * numPoints);
-    double* amp = malloc(sizeof(double) * numPoints);
-    char buffer[256];
+    /* Setup the marker functions and move it to each point across the trace, recording the y value each time. */
+    double* freq = malloc(sizeof(double) * numPoints);      // Array which stores frequency values of trace
+    double* amp = malloc(sizeof(double) * numPoints);       // Array which stores amplitude values of trace
+    char buffer[256];                                       //
+    double resBW, vidBW;                                    // Resolution and video bandwidth read from instrument
     
+    visaWrite(":INITiate:CONTinuous OFF");
     visaWrite(":CALCulate:MARKer:AOff");
     visaWrite(":CALCulate:MARKer1:FUNCtion BPower");
     visaWrite(":CALCulate:MARKer1:FCOunt:STATe ON");
     visaWrite(":CALCulate:MARKer1:MODE POSition");
+    visaWrite(":SENSe:BANDwidth:RESolution?");
+    resBW = atof(visaRead());
+    visaWrite(":SENSe:BANDwidth:VIDeo?");
+    vidBW = atof(visaRead());
 
     for (int i = 0; i < numPoints; i++) {
         freq[i] = round(startFreq + i * freqSpacing);
-        sprintf(buffer, ":CALCulate:MARKer1:X %f", freq[i]);
+        sprintf(buffer, ":CALC:MARK1:X %f", freq[i]);
         visaWrite(buffer);
-        visaWrite(":CALCulate:MARKer1:Y?");
+        visaWrite(":CALC:MARK1:Y?");
         amp[i] = atof(visaReadNoPrint());
     }
+    visaWrite(":INITiate:CONTinuous ON");
 
+    printf("\nStart frequency: %e, Stop frequency: %e\n", startFreq, stopFreq);
+    printf("Number of points: %d, Frequency spacing: %g\n", numPoints, freqSpacing);
+    printf("Resolution bandwidth: %e, Video bandwidth: %e\n", resBW, vidBW);
     
-
+    /* Check if a file exists with the name trace000.csv */
+    /* If yes, increment number until an unused name is found */
+    FILE* filePtr;
+    int i = 0;
+    char fileName[64];
+    do {
+        sprintf(fileName, "trace%.3d.csv", i);
+        i++;
+        filePtr = fopen(fileName, "r");
+        if (filePtr == NULL)
+            continue;
+        else
+            fclose(filePtr);
+    } while (filePtr != NULL);
+    /* Write header and trace information to the file */
+    filePtr = fopen(fileName, "w");
+    fprintf(filePtr, "# %s\n# Start: %e\n# Stop: %e\n# Points: %d\n# RBW: %e\n# VBW: %e\n# Frequency, Amplitude\n", fileName, startFreq, stopFreq, numPoints, resBW, vidBW);
+    for (int n = 0; n < numPoints; n++) {
+        fprintf(filePtr, "%f,%f\n", freq[n], amp[n]);
+    }
+    fclose(filePtr);
+    return;
 }
