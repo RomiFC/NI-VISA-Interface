@@ -351,6 +351,10 @@ void visaGetTraceFromMarkers() {
     for (int n = 0; n < numPoints; n++) {
         fprintf(filePtr, "%f,%f\n", freq[n], amp[n]);
     }
-    fclose(filePtr);
+    if (fclose(filePtr) == 0)
+        printf("Trace data saved to %s\n", fileName);
+    else
+        printf("Error: fclose() could not close the file stream.\n");
+
     return;
 }
