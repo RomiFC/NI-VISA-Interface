@@ -1,10 +1,4 @@
 /*********************************************************************/
-/* This example demonstrates how you might query your system for     */
-/* a particular instrument.  This example queries for all            */
-/* GPIB, serial or VXI instruments.  Notice that VISA is able to     */
-/* find GPIB and VXI instruments because the instruments have a      */
-/* predefined protocol.  But serial instruments do not.  Hence,      */
-/* VISA merely indicates that a serial port is available.            */
 /*                                                                   */
 /* The general flow of the code is                                   */
 /*      Open Resource Manager                                        */
@@ -14,7 +8,8 @@
 /*      Open a session to this device.                               */
 /*      Loop on finding the next instrument until all have been found*/
 /*      Prompt user to select a device to connect to                 */
-/*      Identify device and open options menu for saving data        */
+/*      Identify device and open options menu for actions            */
+/*                                                                   */
 /*********************************************************************/
 
 
@@ -45,6 +40,7 @@
 #define READ 5
 #define SET_TIMEOUT 6
 #define SET_READ 7
+#define FREEZE 8
 #define NEXT 9
 #define MEM_CATALOG 1
 #define MEM_SAVE 2
@@ -154,9 +150,10 @@ static int optionsMenuFSM() {
         printf("%d: Identify resource.\n", IDENTIFY);
         printf("%d: Query command.\n", QUERY);
         printf("%d: Write command.\n", WRITE);
-        printf("%d: Read command.\n", READ);
+        printf("%d: Read response.\n", READ);
         printf("%d: Set timeout.\n", SET_TIMEOUT);
         printf("%d: Set read bytes.\n", SET_READ);
+        printf("%d: Freeze/unfreeze trace.\n", FREEZE);
         printf("%d: Memory options.\n", NEXT);
 
         switch (getInput(9)) {
@@ -187,6 +184,10 @@ static int optionsMenuFSM() {
             return RETURN_LOOP;
         case SET_READ:
             visaSetReadBytes();
+            enterToContinue();
+            return RETURN_LOOP;
+        case FREEZE:
+            visaToggleFreeze();
             enterToContinue();
             return RETURN_LOOP;
         case NEXT:

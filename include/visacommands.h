@@ -358,3 +358,22 @@ void visaGetTraceFromMarkers() {
 
     return;
 }
+
+
+/**
+ * @brief Detects if the trace is set to continuous or not, then toggles it.
+ */
+void visaToggleFreeze() {
+    visaWrite(":INITiate:CONTinuous?");
+    int ifCont = atof(visaReadNoPrint());
+    switch (ifCont) {
+    case 0:
+        visaWrite(":INIT:CONT ON");
+        break;
+    case 1:
+        visaWrite(":INIT:CONT OFF");
+        break;
+    default:
+        printf("Error\n");
+    }
+}
